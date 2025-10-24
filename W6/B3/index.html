@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capybara Plushie</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <header>
+    <h1>Capybara Plushie</h1>
+    <nav>
+      <ul>
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Products</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h2>Welcome to Capybara Plushie!</h2>
+      <p>We bring you the softest, cutest stuffed animals to fill your days with love and comfort.</p>
+    </section>
+
+    <section class="actions">
+      <input type="text" id="searchInput" placeholder="Search for a plushie...">
+      <button id="searchBtn">Search</button>
+      <button id="addProductBtn">Add Product</button>
+    </section>
+
+    <section class="add-product-section">
+      <form id="addProductForm" class="form-container" style="display: none;">
+        <h2>Add New Product</h2>
+        <label for="newName">Product Name:</label>
+        <input type="text" id="newName" required>
+
+        <label for="newDesc">Description:</label>
+        <textarea id="newDesc" rows="3" required></textarea>
+
+        <label for="newPrice">Price:</label>
+        <input type="number" id="newPrice" required>
+
+        <label for="newImage">Image URL:</label>
+        <input type="url" id="newImage" placeholder="https://example.com/image.jpg">
+
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <section id="product-list">
+      <article class="product-item">
+        <h3 class="product-name">Classic Brown Teddy</h3>
+        <img src="https://tse4.mm.bing.net/th/id/OIP.SaTKnMZt3i1X3coWHNkpQQHaG_?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Classic Brown Teddy">
+        <p>A timeless teddy bear with a warm smile and soft brown fur. Perfect for cuddles!</p>
+        <p class="price">$20.00</p>
+      </article>
+
+      <article class="product-item">
+        <h3 class="product-name">Panda Hug Buddy</h3>
+        <img src="https://tse2.mm.bing.net/th/id/OIP.G2BwZ-U9wMYYUgtO_qwXNAHaHP?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Panda Hug Buddy">
+        <p>Our best-selling panda plush, soft and huggable — your perfect bedtime companion.</p>
+        <p class="price">$22.00</p>
+      </article>
+
+      <article class="product-item">
+        <h3 class="product-name">White Polar Bear Plush</h3>
+        <img src="https://tse1.mm.bing.net/th/id/OIP.eUmeCBI87ycgtij2Pjv0dgHaHa?rs=1&pid=ImgDetMain&o=7&rm=3" alt="White Polar Bear Plush">
+        <p>This fluffy polar bear plush will melt your heart with its adorable face and cozy fur.</p>
+        <p class="price">$25.00</p>
+      </article>
+    </section>
+
+    <section class="contact">
+      <h2>Contact Us</h2>
+      <form>
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" rows="4" required></textarea>
+
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Capybara Plushie. 123 Cozy Street, Hanoi, Vietnam.</p>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="script.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý người dùng</title>
+
+  <!-- Thư viện React, ReactDOM, Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // ----- Component SearchForm -----
+    function SearchForm({ onChangeValue }) {
+      return (
+        <div style={{ marginBottom: "15px" }}>
+          <h3>Tìm kiếm người dùng</h3>
+          <input
+            type="text"
+            placeholder="Tìm theo tên hoặc username..."
+            onChange={(e) => onChangeValue(e.target.value)}
+            style={{ padding: "5px", width: "250px" }}
+          />
+        </div>
+      );
+    }
+
+    // ----- Component AddUser -----
+    function AddUser({ onAdd }) {
+      const [showModal, setShowModal] = React.useState(false);
+      const [user, setUser] = React.useState({
+        name: "",
+        username: "",
+        email: "",
+        address: { city: "" },
+      });
+
+      const handleChange = (e) => {
+        const { id, value } = e.target;
+        if (id === "city") {
+          setUser({ ...user, address: { ...user.address, city: value } });
+        } else {
+          setUser({ ...user, [id]: value });
+        }
+      };
+
+      const handleAdd = () => {
+        if (!user.name || !user.username) {
+          alert("Vui lòng nhập Name và Username!");
+          return;
+        }
+        onAdd(user);
+        setUser({ name: "", username: "", email: "", address: { city: "" } });
+        setShowModal(false);
+      };
+
+      return (
+        <div>
+          <button className="btn-add" onClick={() => setShowModal(true)}>
+            ➕ Thêm người dùng
+          </button>
+
+          {showModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h3>Thêm người dùng</h3>
+
+                <label htmlFor="name">Name:</label>
+                <input id="name" value={user.name} onChange={handleChange} />
+
+                <label htmlFor="username">Username:</label>
+                <input id="username" value={user.username} onChange={handleChange} />
+
+                <label htmlFor="email">Email:</label>
+                <input id="email" value={user.email} onChange={handleChange} />
+
+                <label htmlFor="city">City:</label>
+                <input id="city" value={user.address.city} onChange={handleChange} />
+
+                <div className="actions">
+                  <button onClick={() => setShowModal(false)}>Hủy</button>
+                  <button onClick={handleAdd}>Lưu</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ----- Component ResultTable -----
+    function ResultTable({ keyword, user, onAdded }) {
+      const [users, setUsers] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const [editing, setEditing] = React.useState(null);
+
+      // --- Tải dữ liệu ---
+      React.useEffect(() => {
+        fetch("https://jsonplaceholder.typicode.com/users")
+          .then(res => res.json())
+          .then(data => {
+            setUsers(data);
+            setLoading(false);
+          });
+      }, []);
+
+      // --- Khi có user mới ---
+      React.useEffect(() => {
+        if (user) {
+          setUsers(prev => [...prev, { ...user, id: prev.length + 1 }]);
+          onAdded();
+        }
+      }, [user]);
+
+      // --- Lọc theo keyword ---
+      const filteredUsers = users.filter(
+        (u) =>
+          u.name.toLowerCase().includes(keyword.toLowerCase()) ||
+          u.username.toLowerCase().includes(keyword.toLowerCase())
+      );
+
+      // --- Bắt đầu sửa ---
+      function editUser(user) {
+        // Deep copy để tránh thay đổi gốc
+        setEditing({ ...user, address: { ...user.address } });
+      }
+
+      // --- Cập nhật dữ liệu khi sửa ---
+      function handleEditChange(field, value) {
+        if (["street", "suite", "city"].includes(field)) {
+          setEditing((prev) => ({
+            ...prev,
+            address: { ...prev.address, [field]: value },
+          }));
+        } else {
+          setEditing((prev) => ({ ...prev, [field]: value }));
+        }
+      }
+
+      // --- Lưu sau khi sửa ---
+      function saveUser() {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === editing.id ? editing : u))
+        );
+        setEditing(null);
+      }
+
+      function cancelEdit() {
+        setEditing(null);
+      }
+
+      // --- Xóa người dùng ---
+      function removeUser(id) {
+        // Giữ lại tất cả user có id khác id cần xóa
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+      }
+
+      // --- Giao diện ---
+      if (loading) return <p>Đang tải dữ liệu...</p>;
+
+      return (
+        <div>
+          <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>City</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.id}</td>
+                  <td>{u.name}</td>
+                  <td>{u.username}</td>
+                  <td>{u.email}</td>
+                  <td>{u.address.city}</td>
+                  <td>
+                    <button onClick={() => editUser(u)} className="btn-edit">Sửa</button>
+                    <button onClick={() => setUsers(users.filter(us => us.id !== u.id))} className="btn-delete">
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Form Sửa */}
+          {editing && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h3>Sửa người dùng</h3>
+
+                <label>Name:</label>
+                <input
+                  type="text"
+                  value={editing.name}
+                  onChange={(e) => handleEditChange("name", e.target.value)}
+                />
+
+                <label>Username:</label>
+                <input
+                  type="text"
+                  value={editing.username}
+                  onChange={(e) => handleEditChange("username", e.target.value)}
+                />
+
+                <label>Email:</label>
+                <input
+                  type="email"
+                  value={editing.email}
+                  onChange={(e) => handleEditChange("email", e.target.value)}
+                />
+
+                <label>City:</label>
+                <input
+                  type="text"
+                  value={editing.address.city}
+                  onChange={(e) => handleEditChange("city", e.target.value)}
+                />
+
+                <div className="actions">
+                  <button onClick={() => setEditing(null)} className="btn-cancel">Hủy</button>
+                  <button onClick={saveUser} className="btn-save">Lưu</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ----- Component App -----
+    function App() {
+      const [kw, setKeyword] = React.useState("");
+      const [newUser, setNewUser] = React.useState(null);
+
+      return (
+        <div>
+          <h1>Quản lý người dùng</h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <SearchForm onChangeValue={setKeyword} />
+            <AddUser onAdd={setNewUser} />
+          </div>
+          <ResultTable keyword={kw} user={newUser} onAdded={() => setNewUser(null)} />
+        </div>
+      );
+    }
+
+    // Render ra DOM
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>

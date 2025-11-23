@@ -10,6 +10,7 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -100,7 +101,10 @@
     function ResultTable({ keyword, user, onAdded }) {
       const [users, setUsers] = React.useState([]);
       const [loading, setLoading] = React.useState(true);
-      const [editing, setEditing] = React.useState(null);
+
+      const [editing, setEditing] = React.useState(null); // lưu user đang sửa
+      const [showEditModal, setShowEditModal] = React.useState(false);
+
       const [currentPage, setCurrentPage] = React.useState(1);
       const itemsPerPage = 5;
 
@@ -110,22 +114,19 @@
           try {
             const res = await axios.get("https://jsonplaceholder.typicode.com/users");
             setUsers(res.data);
-          } catch (errors) {
-            console.error("Lỗi tải dữ liệu!", errors);
-            alert("Không thể tải danh sách người dùng!");
+          } catch (error) {
+            alert("Lỗi khi tải dữ liệu!");
           } finally {
             setLoading(false);
           }
         };
-
         loadUsers();
       }, []);
 
-      React.useEffect(() => {
-        setCurrentPage(1);
-      }, [keyword]);
+      // reset về trang 1 khi search
+      React.useEffect(() => setCurrentPage(1), [keyword]);
 
-      // --- Khi có user mới ---
+      // --- nhận user mới từ AddUser ---
       React.useEffect(() => {
         if (user) {
           setUsers(prev => [...prev, { ...user, id: prev.length + 1 }]);
@@ -133,59 +134,54 @@
         }
       }, [user]);
 
-      // --- Lọc theo keyword ---
-      const filteredUsers = users.filter(
+      // --- Lọc danh sách ---
+      const filtered = users.filter(
         (u) =>
           u.name.toLowerCase().includes(keyword.toLowerCase()) ||
           u.username.toLowerCase().includes(keyword.toLowerCase())
       );
 
-      // phân trang
-      const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const currentUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+      // --- Phân trang ---
+      const totalPages = Math.ceil(filtered.length / itemsPerPage);
+      const start = (currentPage - 1) * itemsPerPage;
+      const currentUsers = filtered.slice(start, start + itemsPerPage);
 
-      // --- Bắt đầu sửa ---
-      function editUser(user) {
-        // Deep copy để tránh thay đổi gốc
-        setEditing({ ...user, address: { ...user.address } });
-      }
+      // --- XÓA ---
+      const removeUser = (id) => {
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+      };
 
-      // --- Cập nhật dữ liệu khi sửa ---
-      function handleEditChange(field, value) {
-        if (["street", "suite", "city"].includes(field)) {
-          setEditing((prev) => ({
+      // --- BẮT ĐẦU SỬA ---
+      const startEdit = (u) => {
+        setEditing({ ...u, address: { ...u.address } }); // deep copy
+        setShowEditModal(true);
+      };
+
+      // --- THAY ĐỔI TRONG MODAL ---
+      const handleEditChange = (field, value) => {
+        if (field === "city") {
+          setEditing(prev => ({
             ...prev,
-            address: { ...prev.address, [field]: value },
+            address: { ...prev.address, city: value }
           }));
         } else {
-          setEditing((prev) => ({ ...prev, [field]: value }));
+          setEditing(prev => ({ ...prev, [field]: value }));
         }
-      }
+      };
 
-      // --- Lưu sau khi sửa ---
-      function saveUser() {
-        setUsers((prev) =>
+      // --- LƯU SỬA ---
+      const saveEdit = () => {
+        setUsers(prev =>
           prev.map((u) => (u.id === editing.id ? editing : u))
         );
-        setEditing(null);
-      }
+        setShowEditModal(false);
+      };
 
-      function cancelEdit() {
-        setEditing(null);
-      }
-
-      // --- Xóa người dùng ---
-      function removeUser(id) {
-        // Giữ lại tất cả user có id khác id cần xóa
-        setUsers((prev) => prev.filter((u) => u.id !== id));
-      }
-
-      // --- Giao diện ---
       if (loading) return <p>Đang tải dữ liệu...</p>;
 
       return (
         <div>
+          {/* BẢNG */}
           <table border="1" cellPadding="8" style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -199,7 +195,7 @@
             </thead>
 
             <tbody>
-              {currentUsers.length > 0 ? (
+              {currentUsers.length ? (
                 currentUsers.map((u) => (
                   <tr key={u.id}>
                     <td>{u.id}</td>
@@ -208,8 +204,8 @@
                     <td>{u.email}</td>
                     <td>{u.address.city}</td>
                     <td>
-                      <button>Sửa</button>
-                      <button>Xóa</button>
+                      <button onClick={() => startEdit(u)}>Sửa</button>
+                      <button onClick={() => removeUser(u.id)}>Xóa</button>
                     </td>
                   </tr>
                 ))
@@ -221,12 +217,9 @@
             </tbody>
           </table>
 
-          {/* Pagination */}
+          {/* PHÂN TRANG */}
           <div style={{ marginTop: "15px", textAlign: "center" }}>
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-            >
+            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
               ← Trước
             </button>
 
@@ -234,13 +227,48 @@
               Trang {currentPage} / {totalPages}
             </span>
 
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-            >
+            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
               Sau →
             </button>
           </div>
+
+          {/* MODAL EDIT */}
+          {showEditModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h3>Sửa người dùng</h3>
+
+                <label>Name:</label>
+                <input
+                  value={editing.name}
+                  onChange={(e) => handleEditChange("name", e.target.value)}
+                />
+
+                <label>Username:</label>
+                <input
+                  value={editing.username}
+                  onChange={(e) => handleEditChange("username", e.target.value)}
+                />
+
+                <label>Email:</label>
+                <input
+                  value={editing.email}
+                  onChange={(e) => handleEditChange("email", e.target.value)}
+                />
+
+                <label>City:</label>
+                <input
+                  value={editing.address.city}
+                  onChange={(e) => handleEditChange("city", e.target.value)}
+                />
+
+                <div className="actions">
+                  <button onClick={() => setShowEditModal(false)}>Hủy</button>
+                  <button onClick={saveEdit}>Lưu</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
